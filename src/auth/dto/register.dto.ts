@@ -1,15 +1,3 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { CreateUserDto } from '../../user/dto/create-user.dto.js';
 
-export class RegisterDto {
-  @IsEmail()
-  email: string;
-
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(8)
-  password: string;
-}
+export class RegisterDto extends CreateUserDto {}
