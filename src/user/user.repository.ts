@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client.js';
+import type { UserModel } from '../generated/prisma/models.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 export const safeUserSelect = {
@@ -37,6 +38,15 @@ export class UserRepository {
     return this.prisma.user.findUnique({
       where: { email },
       select: safeUserSelect,
+    });
+  }
+
+  findCredentialsByEmail(
+    email: string,
+  ): Promise<Pick<UserModel, 'id' | 'email' | 'password'> | null> {
+    return this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, password: true },
     });
   }
 
