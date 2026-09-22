@@ -7,6 +7,7 @@ export const safeUserSelect = {
   id: true,
   email: true,
   name: true,
+  isVerified: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
@@ -41,6 +42,15 @@ export class UserRepository {
     });
   }
 
+  findByVerificationToken(token: string): Promise<{
+    id: number;
+    verificationTokenExpiresAt: Date | null;
+  } | null> {
+    return this.prisma.user.findUnique({
+      where: { verificationToken: token },
+      select: { id: true, verificationTokenExpiresAt: true },
+    });
+  }
   findCredentialsByEmail(
     email: string,
   ): Promise<Pick<UserModel, 'id' | 'email' | 'password'> | null> {
