@@ -7,3 +7,5 @@ node_modules
 .claude
 .windsurf
 dist
+skills-lock.json
+tsconfig.build.tsbuildinfo

@@ -5,34 +5,24 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { Prisma } from '../generated/prisma/client.js';
-import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
-
-const userSelect = {
-  id: true,
-  email: true,
-  name: true,
-  createdAt: true,
-  updatedAt: true,
-} satisfies Prisma.UserSelect;
+import { UserRepository } from './user.repository.js';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
   async create(dto: CreateUserDto) {
     try {
       const password = await bcrypt.hash(dto.password, 10);
-      return await this.prisma.user.create({
-        data: { email: dto.email, name: dto.name, password },
-        select: userSelect,
+      return await this.userRepository.create({
+        email: dto.email,
+        name: dto.name,
+        password,
       });
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
+      if (this.isUniqueConstraintError(error)) {
         throw new ConflictException('Email already in use');
       }
       throw error;
@@ -40,14 +30,11 @@ export class UserService {
   }
 
   findAll() {
-    return this.prisma.user.findMany({ select: userSelect });
+    return this.userRepository.findAll();
   }
 
   async findOne(id: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: userSelect,
-    });
+    const user = await this.userRepository.findById(id);
     if (!user) {
       throw new NotFoundException(`User #${id} not found`);
     }
@@ -60,17 +47,13 @@ export class UserService {
       if (dto.password) {
         data.password = await bcrypt.hash(dto.password, 10);
       }
-      return await this.prisma.user.update({
-        where: { id },
-        data,
-        select: userSelect,
-      });
+      return await this.userRepository.update(id, data);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
           throw new NotFoundException(`User #${id} not found`);
         }
-        if (error.code === 'P2002') {
+        if (this.isUniqueConstraintError(error)) {
           throw new ConflictException('Email already in use');
         }
       }
@@ -80,10 +63,7 @@ export class UserService {
 
   async remove(id: number) {
     try {
-      return await this.prisma.user.delete({
-        where: { id },
-        select: userSelect,
-      });
+      return await this.userRepository.delete(id);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -93,5 +73,14 @@ export class UserService {
       }
       throw error;
     }
+  }
+
+  private isUniqueConstraintError(
+    error: unknown,
+  ): error is Prisma.PrismaClientKnownRequestError {
+    return (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    );
   }
 }
