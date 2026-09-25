@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
-import type { CreateShortUrlDto } from './dto/create-short-url.dto.js';
+import { CreateShortUrlDto } from './dto/create-short-url.dto.js';
 import { ShortenerService } from './shortener.service.js';
 
 interface AuthenticatedRequest {
@@ -22,10 +22,7 @@ export class ShortenerController {
   constructor(private readonly shortener: ShortenerService) {}
 
   @Post()
-  create(
-    @Body() dto: CreateShortUrlDto,
-    @Request() req: AuthenticatedRequest,
-  ) {
+  create(@Body() dto: CreateShortUrlDto, @Request() req: AuthenticatedRequest) {
     return this.shortener.create(dto, req.user.userId);
   }
 
@@ -35,10 +32,7 @@ export class ShortenerController {
   }
 
   @Delete(':code')
-  remove(
-    @Param('code') code: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
+  remove(@Param('code') code: string, @Request() req: AuthenticatedRequest) {
     return this.shortener.remove(code, req.user.userId);
   }
 }
