@@ -22,4 +22,20 @@ model User {
   verificationTokenExpiresAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  shortUrls ShortUrl[]
+}
+
+model ShortUrl {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique
+  originalUrl String    @db.Text
+  userId      Int?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clicks      Int       @default(0)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("short_urls")
 }
