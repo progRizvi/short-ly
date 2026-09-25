@@ -21,14 +21,13 @@ export class MailService {
     private readonly mailQueue: Queue<VerificationEmailJob>,
     configService: ConfigService,
   ) {
+    const user = configService.get<string>('SMTP_USER');
+    const pass = configService.get<string>('SMTP_PASS');
     this.transporter = nodemailer.createTransport({
       host: configService.getOrThrow<string>('SMTP_HOST'),
       port: Number(configService.get<string>('SMTP_PORT') ?? 587),
       secure: configService.get<string>('SMTP_SECURE') === 'true',
-      auth: {
-        user: configService.getOrThrow<string>('SMTP_USER'),
-        pass: configService.getOrThrow<string>('SMTP_PASS'),
-      },
+      ...(user ? { auth: { user, pass } } : {}),
     });
     this.from =
       configService.get<string>('SMTP_FROM') ?? 'short-ly <no-reply@short.ly>';
@@ -37,12 +36,13 @@ export class MailService {
   async sendVerificationEmail(to: string, verificationUrl: string) {
     const job: VerificationEmailJob = { to, verificationUrl };
     try {
-      await this.mailQueue.add('send-verification', job, {
+      const queued = await this.mailQueue.add('send-verification', job, {
         attempts: 3,
         backoff: { type: 'exponential', delay: 5000 },
         removeOnComplete: 100,
         removeOnFail: 500,
       });
+      this.logger.log(`Queued verification email to ${to} (job ${queued.id})`);
     } catch (error) {
       this.logger.warn('Mail queue unavailable, sending directly');
       await this.sendMailNow(to, verificationUrl);
@@ -61,6 +61,10 @@ export class MailService {
       const previewUrl = nodemailer.getTestMessageUrl(info);
       if (previewUrl) {
         this.logger.log(`Verification email preview: ${previewUrl}`);
+      } else {
+        this.logger.log(
+          `Sent verification email to ${to} (message ${info.messageId})`,
+        );
       }
     } catch (error) {
       this.logger.warn(

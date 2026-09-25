@@ -27,6 +27,7 @@ export class AuthService {
 
   async register(dto: RegisterDto) {
     const existing = await this.userRepository.findByEmail(dto.email);
+
     if (existing) {
       throw new ConflictException('Email already in use');
     }
@@ -39,6 +40,7 @@ export class AuthService {
       verificationToken,
       verificationTokenExpiresAt: new Date(Date.now() + VERIFICATION_TTL_MS),
     });
+
     const appUrl = this.configService.getOrThrow<string>('APP_URL');
     await this.mailService.sendVerificationEmail(
       user.email,

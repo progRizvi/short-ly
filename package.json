@@ -16,6 +16,7 @@
     "start:prod": "node dist/main",
     "lint": "oxlint src/ test/",
     "routes": "node scripts/list-routes.mjs",
+    "mail:queue": "node scripts/check-mail-queue.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
