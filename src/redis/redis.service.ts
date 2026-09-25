@@ -116,7 +116,9 @@ export class RedisService implements OnModuleDestroy {
     if (acquired === 'OK') {
       try {
         const fresh = await fetcher();
-        await this.set(key, fresh, ttlSeconds);
+        if (fresh !== null && fresh !== undefined) {
+          await this.set(key, fresh, ttlSeconds);
+        }
         return fresh;
       } finally {
         await this.client.eval(RELEASE_LOCK_LUA, 1, lockKey, token);
@@ -134,7 +136,9 @@ export class RedisService implements OnModuleDestroy {
     // Winner died without filling the cache: fetch anyway, don't fail.
     this.logger.warn(`Lock wait timed out for ${key}, fetching directly`);
     const fresh = await fetcher();
-    await this.set(key, fresh, ttlSeconds);
+    if (fresh !== null && fresh !== undefined) {
+      await this.set(key, fresh, ttlSeconds);
+    }
     return fresh;
   }
 

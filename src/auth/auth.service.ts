@@ -10,6 +10,8 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'node:crypto';
 import { MailService } from '../mail/mail.service.js';
+import { RedisService } from '../redis/redis.service.js';
+import { userCacheKey } from '../user/user.service.js';
 import { UserRepository } from '../user/user.repository.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { RegisterDto } from './dto/register.dto.js';
@@ -23,6 +25,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly configService: ConfigService,
+    private readonly redis: RedisService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -65,11 +68,13 @@ export class AuthService {
     ) {
       throw new BadRequestException('Invalid or expired verification token');
     }
-    return this.userRepository.update(record.id, {
+    const verified = await this.userRepository.update(record.id, {
       isVerified: true,
       verificationToken: null,
       verificationTokenExpiresAt: null,
     });
+    await this.redis.del(userCacheKey(record.id));
+    return verified;
   }
 
   async login(dto: LoginDto) {
